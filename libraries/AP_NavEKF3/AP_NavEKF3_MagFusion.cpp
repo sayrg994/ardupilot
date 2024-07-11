@@ -464,6 +464,7 @@ void NavEKF3_core::SelectMagFusion()
     }
 }
 
+
 /*
  * Fuse magnetometer measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:

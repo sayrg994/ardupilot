@@ -15,6 +15,7 @@
     LOG_XKQ_MSG,  \
     LOG_XKT_MSG,  \
     LOG_XKTV_MSG, \
+    LOG_XKMF_MSG, \
     LOG_XKV1_MSG, \
     LOG_XKV2_MSG, \
     LOG_XKY0_MSG, \
