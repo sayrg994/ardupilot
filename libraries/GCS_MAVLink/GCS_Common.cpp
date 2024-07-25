@@ -5964,6 +5964,7 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
 #endif  // AP_AHRS_ENABLED
 }
 
+#if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
 void GCS_MAVLINK::send_flight_information()
 {
     const uint64_t time_boot_us = AP_HAL::millis64();
@@ -6010,6 +6011,7 @@ void GCS_MAVLINK::send_flight_information()
         flight_number
     );
 }
+#endif // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
 
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
 {
@@ -6442,10 +6444,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
+#if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
     case MSG_FLIGHT_INFORMATION:
         CHECK_PAYLOAD_SIZE(FLIGHT_INFORMATION);
         send_flight_information();
         break;
+#endif
 
     default:
         // try_send_message must always at some stage return true for
