@@ -123,36 +123,6 @@ SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float foc
     return SetFocusResult::ACCEPTED;
 }
 
-// handle incoming mavlink message including CAMERA_INFORMATION
-void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
-{
-    // exit immediately if this is not our message
-    if (msg.sysid != _sysid || msg.compid != _compid) {
-        return;
-    }
-
-    // handle CAMERA_INFORMATION
-    if (msg.msgid == MAVLINK_MSG_ID_CAMERA_INFORMATION) {
-        mavlink_msg_camera_information_decode(&msg, &_cam_info);
-
-        const uint8_t fw_ver_major = _cam_info.firmware_version & 0x000000FF;
-        const uint8_t fw_ver_minor = (_cam_info.firmware_version & 0x0000FF00) >> 8;
-        const uint8_t fw_ver_revision = (_cam_info.firmware_version & 0x00FF0000) >> 16;
-        const uint8_t fw_ver_build = (_cam_info.firmware_version & 0xFF000000) >> 24;
-
-        // display camera info to user
-        gcs().send_text(MAV_SEVERITY_INFO, "Camera: %s.32 %s.32 fw:%u.%u.%u.%u",
-                _cam_info.vendor_name,
-                _cam_info.model_name,
-                (unsigned)fw_ver_major,
-                (unsigned)fw_ver_minor,
-                (unsigned)fw_ver_revision,
-                (unsigned)fw_ver_build);
-
-        _got_camera_info = true;
-    }
-}
-
 // send camera information message to GCS
 void AP_Camera_MAVLinkCamV2::send_camera_information(mavlink_channel_t chan) const
 {
@@ -198,12 +168,12 @@ void AP_Camera_MAVLinkCamV2::find_camera()
     if (_link == nullptr) {
         // we expect that instance 0 has compid = MAV_COMP_ID_CAMERA, instance 1 has compid = MAV_COMP_ID_CAMERA2, etc
         uint8_t compid = MIN(MAV_COMP_ID_CAMERA + _instance, MAV_COMP_ID_CAMERA6);
-        _link = GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_CAMERA, compid, _sysid);
+        _link = GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_CAMERA, compid, _sysid_camera);
         if (_link == nullptr) {
             // have not yet found a camera so return
             return;
         }
-        _compid = compid;
+        _compid_camera = compid;
     }
 
     // request CAMERA_INFORMATION
@@ -234,8 +204,8 @@ void AP_Camera_MAVLinkCamV2::request_camera_information() const
         0,  // param6
         0,  // param7
         MAV_CMD_REQUEST_MESSAGE,
-        _sysid,
-        _compid,
+        _sysid_camera,
+        _compid_camera,
         0  // confirmation
     };
 

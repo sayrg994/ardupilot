@@ -50,9 +50,6 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
 
-    // handle MAVLink messages from the camera
-    void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) override;
-
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
@@ -66,12 +63,8 @@ private:
 
     // internal members
     bool _initialised;          // true once the camera has provided a CAMERA_INFORMATION
-    bool _got_camera_info;      // true once camera has provided CAMERA_INFORMATION
-    mavlink_camera_information_t _cam_info {}; // latest camera information received from camera
     uint32_t _last_caminfo_req_ms;  // system time that CAMERA_INFORMATION was last requested (used to throttle requests)
     class GCS_MAVLINK *_link;   // link we have found the camera on. nullptr if not seen yet
-    uint8_t _sysid;             // sysid of camera
-    uint8_t _compid;            // component id of gimbal
 };
 
 #endif // AP_CAMERA_MAVLINKCAMV2_ENABLED

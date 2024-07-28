@@ -68,4 +68,13 @@ void AP_Camera_Servo::configure(float shooting_mode, float shutter_speed, float 
     }
 }
 
+// // handle MAVLink messages for the camera
+// void AP_Camera_Servo::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
+// {
+//     // overrides the default CAMERA_INFORMATION handling
+//     if (msg.msgid == MAVLINK_MSG_ID_CAMERA_INFORMATION) {
+//         tracker->handle_message(chan,msg);
+//     }
+// }
+
 #endif // AP_CAMERA_SERVO_ENABLED
