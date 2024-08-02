@@ -413,6 +413,28 @@ bool Copter::set_desired_speed(float speed)
 }
 
 #if MODE_AUTO_ENABLED == ENABLED
+// add an additional offset to vehicle's target position
+// units are m or m/s in NED frame
+bool Copter::set_auto_pos_offset(const Vector3f &pos_offset_NED)
+{
+    if (flightmode != &mode_auto) {
+        return false;
+    }
+    wp_nav->set_pos_offset(pos_offset_NED.topostype());
+    return true;
+}
+
+// add an additional offset to vehicle's target velocity
+// units are m or m/s in NED frame
+bool Copter::set_auto_vel_offset(const Vector3f &vel_offset_NED)
+{
+    if (flightmode != &mode_auto) {
+        return false;
+    }
+    wp_nav->set_vel_offset(vel_offset_NED);
+    return true;
+}
+
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Copter::nav_scripting_enable(uint8_t mode)
 {
