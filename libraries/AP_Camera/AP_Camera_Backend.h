@@ -37,9 +37,12 @@ public:
     CLASS_NO_COPY(AP_Camera_Backend);
 
     // camera options parameter values
-    enum class Options : int8_t {
+    enum class Option : uint8_t {
         RecordWhileArmed = (1 << 0U)
     };
+    bool option_is_set(Option option) const {
+        return ((uint8_t)options & (uint8_t)option) != 0;
+    }
 
     // init - performs any required initialisation
     virtual void init() {};
