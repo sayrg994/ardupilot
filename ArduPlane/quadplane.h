@@ -76,6 +76,14 @@ public:
     void control_auto(void);
     bool setup(void);
 
+    enum class ThrustType : uint8_t {
+        THRUST_TYPE_UNDEFINED=0, // Undefined. Means that no backend has configured it yet.
+        THRUST_TYPE_SLT, // Traditional quadplane, with a pusher motor and independent multicopter lift.
+        THRUST_TYPE_TAILSITTER,
+        THRUST_TYPE_TILTROTOR,
+    };
+    ThrustType get_thrust_type(void) {return thrust_type;}
+
     void vtol_position_controller(void);
     void setup_target_position(void);
     void takeoff_controller(void);
@@ -197,6 +205,9 @@ private:
 
     AP_Enum<AP_Motors::motor_frame_class> frame_class;
     AP_Enum<AP_Motors::motor_frame_type> frame_type;
+
+    // Types of different "quadplane" configurations.
+    ThrustType thrust_type;
 
     // Initialise motors to allow passing it to tailsitter in its constructor
     AP_MotorsMulticopter *motors = nullptr;

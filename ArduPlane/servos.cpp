@@ -559,6 +559,14 @@ float Plane::apply_throttle_limits(float throttle_in)
         if (aparm.takeoff_throttle_max != 0) {
             max_throttle = aparm.takeoff_throttle_max.get();
         }
+
+        // Apply minimum throttle limits only for SLT thrust types.
+        // The other types don't support it well.
+        if (quadplane.thrust_type == QuadPlane::ThrustType::THRUST_TYPE_SLT) {
+            if (aparm.takeoff_throttle_min.get() != 0) {
+                min_throttle = MAX(min_throttle, aparm.takeoff_throttle_min.get());
+            }
+        }
     }
 #endif
 

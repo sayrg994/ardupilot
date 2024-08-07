@@ -810,6 +810,10 @@ bool QuadPlane::setup(void)
     pilot_speed_z_max_dn.convert_centi_parameter(AP_PARAM_INT16);
     pilot_accel_z.convert_centi_parameter(AP_PARAM_INT16);
 
+    // Provisionally assign the SLT thrust type.
+    // It will be overwritten by tailsitter or tiltorotor setups.
+    thrust_type = ThrustType::THRUST_TYPE_SLT;
+
     tailsitter.setup();
 
     tiltrotor.setup();
