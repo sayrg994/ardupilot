@@ -231,6 +231,10 @@ private:
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan);
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    void send_video_stream_information(mavlink_channel_t chan);
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan);
 
