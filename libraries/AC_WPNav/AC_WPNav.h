@@ -220,6 +220,17 @@ public:
     /// return the crosstrack_error - horizontal error of the actual position vs the desired position
     float crosstrack_error() const { return _pos_control.crosstrack_error();}
 
+    ///
+    /// offset methods
+    ///
+    /// add an offset to vehicle's target position in NED meters
+    /// only xy offsets are supported
+    void set_pos_offset(const Vector3p& pos_offset_NED);
+
+    /// add an offset to vehicle's target velocity in NED m/s
+    /// only xy offsets are supported
+    void set_vel_offset(const Vector3f& vel_offset_NED);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
