@@ -167,9 +167,16 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     if (has_been_killed(instance)) {
         return;
     }
-    _imu._gyro[instance] = gyro;
-    _imu._gyro_healthy[instance] = true;
 
+    if (!_imu.push_rate_loop_gyro(instance)) { // rate loop thread is not consuming samples
+        _imu._gyro[instance] = gyro;
+#if HAL_GYROFFT_ENABLED
+        // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
+        _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
+#endif
+    }
+
+    _imu._gyro_healthy[instance] = true;
     // publish delta angle
     _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
     _imu._delta_angle_dt[instance] = _imu._delta_angle_acc_dt[instance];
@@ -212,7 +219,6 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     save_gyro_window(instance, gyro, filter_phase++);
 
     Vector3f gyro_filtered = gyro;
-
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // apply the harmonic notch filters
     for (auto &notch : _imu.harmonic_notches) {
@@ -220,15 +226,13 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
             continue;
         }
         bool inactive = notch.is_inactive();
-#if AP_AHRS_ENABLED
         // by default we only run the expensive notch filters on the
         // currently active IMU we reset the inactive notch filters so
         // that if we switch IMUs we're not left with old data
         if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
-            instance != AP::ahrs().get_primary_gyro_index()) {
+            instance != _imu._primary_gyro) {
             inactive = true;
         }
-#endif
         if (inactive) {
             // while inactive we reset the filter so when it activates the first output
             // will be the first input sample
@@ -257,6 +261,8 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     } else {
         _imu._gyro_filtered[instance] = gyro_filtered;
     }
+
+    _imu.push_next_gyro_sample(instance);
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
@@ -772,15 +778,22 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     if (has_been_killed(instance)) {
         return;
     }
+
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
-#if HAL_GYROFFT_ENABLED
-        // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
-        _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
-#endif
         _imu._new_gyro_data[instance] = false;
     }
 
+    update_gyro_filters(instance);
+
+    set_primary_gyro(_imu._primary_gyro);
+}
+
+/*
+  propagate filter changes from front end to backend
+ */
+void AP_InertialSensor_Backend::update_gyro_filters(uint8_t instance) /* front end */
+{
     // possibly update filter frequency
     const float gyro_rate = _gyro_raw_sample_rate(instance);
 
@@ -815,7 +828,18 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
         _publish_accel(instance, _imu._accel_filtered[instance]);
         _imu._new_accel_data[instance] = false;
     }
-    
+
+    update_accel_filters(instance);
+
+    set_primary_accel(_imu._primary_accel);
+}
+
+
+/*
+  propagate filter changes from front end to backend
+ */
+void AP_InertialSensor_Backend::update_accel_filters(uint8_t instance) /* front end */
+{
     // possibly update filter frequency
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         _imu._accel_filter[instance].set_cutoff_frequency(_accel_raw_sample_rate(instance), _accel_filter_cutoff());

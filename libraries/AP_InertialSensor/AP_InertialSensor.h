@@ -9,6 +9,8 @@
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_PEAK_DETECT_TIMEOUT_MS 500     // peak-hold detector timeout
 
+#define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 8     // gyro buffer size for rate loop
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include <stdint.h>
@@ -22,6 +24,7 @@
 #include <AP_SerialManager/AP_SerialManager_config.h>
 #include "AP_InertialSensor_Params.h"
 #include "AP_InertialSensor_tempcal.h"
+#include <AP_HAL/CondMutex.h>
 
 #ifndef AP_SIM_INS_ENABLED
 #define AP_SIM_INS_ENABLED AP_SIM_ENABLED
@@ -34,6 +37,7 @@
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
 class AP_AHRS;
+class FastRateBuffer;
 
 /*
   forward declare AP_Logger class. We can't include logger.h
@@ -51,6 +55,7 @@ class AP_Logger;
 class AP_InertialSensor : AP_AccelCal_Client
 {
     friend class AP_InertialSensor_Backend;
+    friend class FastRateBuffer;
 
 public:
     AP_InertialSensor();
@@ -161,12 +166,12 @@ public:
     const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_first_usable_gyro]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_first_usable_gyro, axis); }
-    uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_first_usable_gyro); }
-    uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_first_usable_gyro]; }
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     bool has_fft_notch() const;
 #endif
 #endif
+    uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_first_usable_gyro]; }
+    uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_first_usable_gyro); }
     bool set_gyro_window_size(uint16_t size);
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset(i); }
@@ -263,6 +268,7 @@ public:
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
 
     void detect_backends(void);
+    void update_backends();
 
     // accel peak hold detector
     void set_accel_peak_hold(uint8_t instance, const Vector3f &accel);
@@ -656,9 +662,13 @@ private:
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
     bool _accel_id_ok[INS_MAX_INSTANCES];
 
-    // primary accel and gyro
+    // first usable gyro and accel
     uint8_t _first_usable_gyro;
     uint8_t _first_usable_accel;
+
+    // primary accel and gyro
+    uint8_t _primary_gyro;
+    uint8_t _primary_accel;
 
     // mask of accels and gyros which we will be actively using
     // and this should wait for in wait_for_sample()
@@ -798,6 +808,21 @@ private:
     bool raw_logging_option_set(RAW_LOGGING_OPTION option) const {
         return (raw_logging_options.get() & int32_t(option)) != 0;
     }
+
+    FastRateBuffer* fast_rate_buffer;
+public:
+    void enable_fast_rate_buffer();
+    void disable_fast_rate_buffer();
+    bool get_next_gyro_sample(Vector3f& gyro);
+    uint32_t get_num_gyro_samples();
+    void set_rate_decimation(uint8_t rdec);
+    // are gyro samples being sourced from the rate loop buffer
+    bool use_rate_loop_gyro_samples() const;
+    // whether or not to push the current gyro sample
+    void push_next_gyro_sample(uint8_t instance);
+    void update_backend_filters();
+private:
+    bool push_rate_loop_gyro(uint8_t instance) const;
 };
 
 namespace AP {

@@ -1896,6 +1896,7 @@ void AP_InertialSensor::update(void)
             _delta_velocity_valid[i] = false;
             _delta_angle_valid[i] = false;
         }
+
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
         }
@@ -1950,12 +1951,24 @@ void AP_InertialSensor::update(void)
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_gyro_healthy[i] && _use(i)) {
                 _first_usable_gyro = i;
+#if AP_AHRS_ENABLED
+                // ask AHRS for the true primary, might just be us though
+                _primary_gyro = AP::ahrs().get_primary_gyro_index();
+#else
+                _primary_gyro = _first_usable_gyro;
+#endif
                 break;
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_accel_healthy[i] && _use(i)) {
                 _first_usable_accel = i;
+#if AP_AHRS_ENABLED
+                // ask AHRS for the true primary, might just be us though
+                _primary_accel = AP::ahrs().get_primary_accel_index();
+#else
+                _primary_accel = _first_usable_accel;
+#endif
                 break;
             }
         }
