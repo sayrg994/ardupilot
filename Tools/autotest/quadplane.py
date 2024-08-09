@@ -1052,7 +1052,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def setup_ICEngine_vehicle(self, start_chan):
         '''restarts SITL with an IC Engine setup'''
         self.set_parameters({
-            'ICE_START_CHAN': start_chan,
+            "RC%u_OPTION" % start_chan: 179,
         })
 
         model = "quadplane-ice"
